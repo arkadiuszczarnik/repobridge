@@ -12,4 +12,5 @@ coverage.out
 
 .idea
 bin
+.agents
 /AGENTS.md
