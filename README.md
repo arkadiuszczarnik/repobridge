@@ -1,4 +1,4 @@
-<h1 align="center">repobridge</h1>
+<h1 align="center">RepoBridge</h1>
 
 <p align="center">
   <strong>Fetch package and repository source code into stable local paths for coding agents and developer tooling.</strong>
