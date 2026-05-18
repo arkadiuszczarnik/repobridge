@@ -1,80 +1,127 @@
-# repobridge
+<h1 align="center">repobridge</h1>
 
-Fetch source code for packages and repositories into a local cache, then print stable paths that coding agents and other tooling can read.
+<p align="center">
+  <strong>Fetch package and repository source code into stable local paths for coding agents and developer tooling.</strong>
+</p>
 
-`repobridge` is a Go CLI distributed through npm. The npm entrypoint selects the native binary for the current platform and runs it with inherited stdio.
+<p align="center">
+  <a href="https://github.com/arkadiuszczarnik/repobridge"><img alt="Repository" src="https://img.shields.io/badge/github-repobridge-181717?logo=github"></a>
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white">
+  <img alt="Cobra" src="https://img.shields.io/badge/Cobra-1.9.1-6F42C1">
+  <img alt="Registries" src="https://img.shields.io/badge/registries-npm%20%7C%20PyPI%20%7C%20crates.io-2F855A">
+  <img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue">
+</p>
+
+`repobridge` is a small Go CLI for turning package or repository specs into local source trees. It supports npm, PyPI, crates.io, and common Git repository hosts.
+
+## Features
+
+- Resolve package specs from npm, PyPI, and crates.io.
+- Fetch Git repositories from GitHub, GitLab, and Bitbucket.
+- Reuse a stable local cache across repeated agent/tool runs.
+- Detect installed npm package versions from `node_modules`, lockfiles, and `package.json`.
+- Print machine-friendly paths for downstream automation.
+
+## Requirements
+
+- Go 1.22 or newer
+- `git` available on `PATH`
 
 ## Installation
 
-```bash
-pnpm add -g repobridge
-```
-
-During local development in this repository:
+Build or install from the repository root:
 
 ```bash
-cd packages/repobridge
-pnpm build
-node bin/repobridge.js --version
+go install ./cmd/repobridge
 ```
 
-`pnpm build` cross-compiles all binaries expected by the npm shim so the package is self-contained on supported platforms. Use `pnpm build:native` when you only need to refresh the current host binary during local development.
-
-## Commands
+For a local binary:
 
 ```bash
-repobridge fetch <spec...>
-repobridge path <spec...>
-repobridge list [--json]
-repobridge remove <spec...>
-repobridge clean
+go build -o ./bin/repobridge ./cmd/repobridge
+./bin/repobridge --version
 ```
 
-- `fetch` downloads source code into the cache.
-- `path` fetches on cache miss and prints the absolute source path.
-- `list` shows cached packages and repositories.
-- `remove` removes one or more cached sources.
-- `clean` removes cached sources, optionally scoped by flags such as `--packages`, `--repos`, `--npm`, `--pypi`, and `--crates`.
+## Quick Start
 
-Most commands that resolve package versions accept `--cwd` to choose the directory used for lockfile detection. `fetch` also accepts `--quiet`; `path` accepts `--verbose`.
-
-## Supported Inputs
-
-Package inputs default to npm:
+Fetch source and print its cache path:
 
 ```bash
 repobridge path react
-repobridge path react@19.0.0
-repobridge path @scope/package@1.2.3
-```
-
-Use a registry prefix for non-npm packages:
-
-```bash
-repobridge path pypi:requests
 repobridge path pypi:requests==2.32.3
 repobridge path crates:serde@1.0.217
+repobridge path github.com/vercel/next.js
 ```
 
-Repository inputs can use common shorthand or full URLs:
+Use `fetch` when you only need to populate the cache:
 
 ```bash
-repobridge path vercel/next.js
-repobridge path github.com/vercel/next.js
-repobridge path gitlab.com/group/project
-repobridge path bitbucket.org/workspace/repo
-repobridge path https://github.com/vercel/next.js
+repobridge fetch react@19.0.0 vercel/next.js
 ```
 
-Supported package registries are npm, PyPI, and crates.io. Supported repository hosts are GitHub, GitLab, and Bitbucket.
+Inspect and clean cached sources:
 
-## Environment Variables
+```bash
+repobridge list
+repobridge list --json
+repobridge remove react
+repobridge clean --repos
+```
 
-- `REPOBRIDGE_HOME`: Cache directory. Defaults to `~/.repobridge`.
-- `GITHUB_TOKEN`: Token used for GitHub API calls and private GitHub repository fetches.
-- `GITLAB_TOKEN`: Token used for private GitLab repository fetches.
-- `BITBUCKET_TOKEN`: Token used for private Bitbucket repository fetches.
+## Supported Inputs
 
-## Cache Layout
+| Input | Example |
+| --- | --- |
+| npm package | `react`, `react@19.0.0`, `@scope/package@1.2.3` |
+| PyPI package | `pypi:requests`, `pypi:requests==2.32.3` |
+| crates.io package | `crates:serde`, `crates:serde@1.0.217` |
+| GitHub shorthand | `vercel/next.js` |
+| Repository host | `github.com/vercel/next.js`, `gitlab.com/group/project` |
+| Full URL | `https://github.com/vercel/next.js` |
 
-The cache contains cloned source trees and a `sources.json` index under `REPOBRIDGE_HOME`. Fetched repositories have their `.git` directory removed so the cache is a source snapshot rather than a nested working tree.
+Package inputs default to npm. Use a registry prefix for non-npm packages.
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `repobridge fetch <spec...>` | Downloads sources into the cache. |
+| `repobridge path <spec...>` | Fetches on cache miss and prints absolute source paths. |
+| `repobridge list [--json]` | Lists cached packages and repositories. |
+| `repobridge remove <spec...>` | Removes selected cached sources. |
+| `repobridge clean` | Removes cached sources, optionally scoped by flags. |
+
+Most commands that resolve package versions accept `--cwd` for lockfile detection. `fetch` also accepts `--quiet`; `path` accepts `--verbose`; `clean` accepts filters such as `--packages`, `--repos`, `--npm`, `--pypi`, and `--crates`.
+
+## Configuration
+
+| Variable | Description |
+| --- | --- |
+| `REPOBRIDGE_HOME` | Cache directory. Defaults to `~/.repobridge`. |
+| `GITHUB_TOKEN` | Token for GitHub API calls and private GitHub repositories. |
+| `GITLAB_TOKEN` | Token for private GitLab repositories. |
+| `BITBUCKET_TOKEN` | Token for private Bitbucket repositories. |
+
+The cache contains cloned source trees and a `sources.json` index under `REPOBRIDGE_HOME`. Repository fetches remove `.git` so the cache stores source snapshots rather than nested working trees.
+
+## Development
+
+Run the CLI from source:
+
+```bash
+go run ./cmd/repobridge --version
+```
+
+Run checks before submitting changes:
+
+```bash
+gofmt -w ./cmd ./internal
+go test ./...
+go vet ./...
+```
+
+Tests are colocated with implementation files as `*_test.go`. Lockfile fixtures live in `internal/lockfile/testdata/`.
+
+## License
+
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
